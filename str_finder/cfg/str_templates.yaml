@@ -1,0 +1,288 @@
+templates:
+    - locusName: D1S1677
+      template_structure:
+          - pattern: TTCC
+            delim: False
+            max_errors: 1
+    - locusName: D2S1776
+      template_structure:
+          - pattern: AGAT
+            delim: False
+            max_errors: 1
+    - locusName: D3S4529
+      template_structure:
+    - locusName: D5S2800
+      template_structure:
+          - pattern: GGTA
+            delim: False
+            max_errors: 1
+          - pattern: GACA
+            delim: False
+            max_errors: 1
+          - pattern: GATA
+            delim: False
+            max_errors: 1
+          - pattern: GATT
+            delim: False
+            max_errors: 1
+    - locusName: D6S474
+      template_structure:
+          - pattern: TTG
+            delim: False
+            max_errors: 1
+          - pattern: TTA
+            delim: False
+            max_errors: 1
+    - locusName: D12ATA63
+      template_structure:
+          - pattern: TTG
+            delim: False
+            max_errors: 1
+          - pattern: TTA
+            delim: False
+            max_errors: 1
+    - locusName: D14S1434
+      template_structure:
+          - pattern: CTGT
+            delim: False
+            max_errors: 1
+          - pattern: CTAT
+            delim: False
+            max_errors: 1
+    - locusName: DXS9895
+      template_structure:
+    - locusName: DXS10148
+      template_structure:
+          - pattern: GGAA
+            delim: False
+            max_errors: 0
+          - pattern: AAGA
+            delim: False
+            max_errors: 0
+          - pattern: AAAG
+            delim: False
+            max_errors: 0
+          - pattern: AAGGAAAG
+            delim: True
+            max_errors: 0
+          - pattern: AAGG
+            delim: False
+            max_errors: 0
+    - locusName: DXS10079
+      template_structure:
+          - pattern: AGAA
+            delim: False
+            max_errors: 1
+          - pattern: AGAG
+            delim: True
+            max_errors: 1
+          - pattern: AGAA
+            delim: False
+            max_errors: 1
+    - locusName: DXS10075
+      template_structure:
+    - locusName: DXS7424
+      template_structure:
+    - locusName: DXS7133
+      template_structure:
+    - locusName: GATA172D05
+      template_structure:
+    - locusName: DXS10101
+      template_structure:
+          - pattern: AAAG
+            delim: False
+            max_errors: 0
+          - pattern: GAAAGAAG
+            delim: True
+            max_errors: 0
+          - pattern: GAAA
+            delim: False
+            max_errors: 0
+          - pattern: A
+            delim: True
+            max_errors: 0
+          - pattern: GAAA
+            delim: False
+            max_errors: 0
+          - pattern: AAGA
+            delim: True
+            max_errors: 0
+          - pattern: AAAG
+            delim: False
+            max_errors: 0
+          - pattern: AAAAAGAA
+            delim: True
+            max_errors: 0
+          - pattern: AAAG
+            delim: False
+            max_errors: 0           
+          - pattern: AA
+            delim: False
+            max_errors: 0  
+    - locusName: DXS8377
+      template_structure:
+    - locusName: DXS10146
+      template_structure:
+          - pattern: AAAG
+            delim: False
+            max_errors: 1
+          - pattern: A
+            delim: True
+            max_errors: 0
+          - pattern: AAAG
+            delim: False
+            max_errors: 1
+          - pattern: AAAGAAGAAA
+            delim: True
+            max_errors: 1
+          - pattern: GGAA
+            delim: False
+            max_errors: 1
+          - pattern: GAAAGAAGAA
+            delim: True
+            max_errors: 1
+          - pattern: GGGA
+            delim: False
+            max_errors: 1
+          - pattern: GGAAGGGA
+            delim: True
+            max_errors: 1
+          - pattern: GGAA
+            delim: False
+            max_errors: 1            
+          - pattern: A
+            delim: True
+            max_errors: 0
+          - pattern: GGAA
+            delim: False
+            max_errors: 1 
+    - locusName: DXS10134
+      template_structure:
+          - pattern: GAAA
+            delim: False
+            max_errors: 1
+          - pattern: GAGA
+            delim: True
+            max_errors: 1
+          - pattern: GAAA
+            delim: False
+            max_errors: 1
+          - pattern: AA
+            delim: True
+            max_errors: 0
+          - pattern: GAAA
+            delim: False
+            max_errors: 1
+          - pattern: GAGA
+            delim: True
+            max_errors: 1
+          - pattern: GAAA
+            delim: False
+            max_errors: 1
+          - pattern: GAGAGACAGAGACAGAGACAGA
+            delim: True
+            max_errors: 1
+          - pattern: GAAA
+            delim: False
+            max_errors: 1            
+          - pattern: GTAA
+            delim: True
+            max_errors: 1 
+          - pattern: GAAA
+            delim: False
+            max_errors: 1 
+          - pattern: AAA
+            delim: True
+            max_errors: 1            
+          - pattern: GAAA
+            delim: False
+            max_errors: 1
+          - pattern: AAA
+            delim: True
+            max_errors: 1            
+          - pattern: GAAA
+            delim: False
+            max_errors: 1            
+    - locusName: DXS10147
+      template_structure:
+    - locusName: DYS393
+      template_structure:
+          - pattern: AGAT
+            delim: False
+            max_errors: 1
+    - locusName: DYS456
+      template_structure:
+          - pattern: AGAT
+            delim: False
+            max_errors: 1
+    - locusName: DYS458
+      template_structure:
+          - pattern: GAAA
+            delim: False
+            max_errors: 1
+    - locusName: DYS449
+      template_structure:
+          - pattern: GAAA
+            delim: False
+            max_errors: 1
+          - pattern: '*_22'
+            delim: True
+            max_errors: 1
+          - pattern: TTCT
+            delim: False
+            max_errors: 1
+          - pattern: '*_12'
+            delim: True
+            max_errors: 1
+          - pattern: TTCT
+            delim: False
+            max_errors: 1
+    - locusName: DYS627
+      template_structure:
+          - pattern: AGAA
+            delim: False
+            max_errors: 1
+          - pattern: '*_16'
+            delim: True
+            max_errors: 1
+          - pattern: AGAG
+            delim: False
+            max_errors: 1
+          - pattern: AAAG
+            delim: False
+            max_errors: 1
+          - pattern: '*_82'
+            delim: True
+            max_errors: 1
+          - pattern: AAGG
+            delim: False
+            max_errors: 1
+    - locusName: DYS518
+      template_structure:
+          - pattern: AAAG
+            delim: False
+            max_errors: 1
+          - pattern: GAAG
+            delim: True
+            max_errors: 1
+          - pattern: AAAG
+            delim: False
+            max_errors: 1
+          - pattern: GGAG
+            delim: True
+            max_errors: 1
+          - pattern: AAAG
+            delim: False
+            max_errors: 1
+          - pattern: GAAGAG
+            delim: True
+            max_errors: 1
+          - pattern: AAAG
+            delim: False
+            max_errors: 1
+          - pattern: '*_27'
+            delim: True
+            max_errors: 1          
+          - pattern: AAGG
+            delim: False
+            max_errors: 1  

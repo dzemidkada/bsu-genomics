@@ -1,0 +1,101 @@
+custom_str_panel:
+    - chromosome: chr1
+      locusStart: 163589926
+      locusEnd: 163590185
+      locusName: D1S1677
+    - chromosome: chr2
+      locusStart: 168788793
+      locusEnd: 168789036
+      locusName: D2S1776
+    - chromosome: chr3
+      locusStart: 85803384
+      locusEnd: 85803631
+      locusName: D3S4529
+    - chromosome: chr5
+      locusStart: 59403032
+      locusEnd: 59403299
+      locusName: D5S2800
+    - chromosome: chr6
+      locusStart: 112557851
+      locusEnd: 112558118
+      locusName: D6S474
+    - chromosome: chr12
+      locusStart: 107928490
+      locusEnd: 107928728
+      locusName: D12ATA63
+    - chromosome: chr14
+      locusStart: 94841954
+      locusEnd: 94842205
+      locusName: D14S1434
+    - chromosome: chrX
+      locusStart: 7459026
+      locusEnd: 7459282
+      locusName: DXS9895
+    - chromosome: chrX
+      locusStart: 9270838
+      locusEnd: 9271133
+      locusName: DXS10148
+    - chromosome: chrX
+      locusStart: 67495981
+      locusEnd: 67496264
+      locusName: DXS10079
+    - chromosome: chrX
+      locusStart: 67778284
+      locusEnd: 67778554
+      locusName: DXS10075
+    - chromosome: chrX
+      locusStart: 101363788
+      locusEnd: 101364036
+      locusName: DXS7424
+    - chromosome: chrX
+      locusStart: 109798234
+      locusEnd: 109798477
+      locusName: DXS7133
+    - chromosome: chrX
+      locusStart: 113931617
+      locusEnd: 113931856
+      locusName: GATA172D05
+    - chromosome: chrX
+      locusStart: 134520385
+      locusEnd: 134520719
+      locusName: DXS10101
+    - chromosome: chrX
+      locusStart: 150398147
+      locusEnd: 150398505
+      locusName: DXS8377
+    - chromosome: chrX
+      locusStart: 150403832
+      locusEnd: 150404165
+      locusName: DXS10146
+    - chromosome: chrX
+      locusStart: 150481746
+      locusEnd: 150482131
+      locusName: DXS10134
+    - chromosome: chrX
+      locusStart: 150495107
+      locusEnd: 150495334
+      locusName: DXS10147
+    - chromosome: chrY
+      locusStart: 3263011
+      locusEnd: 3263258
+      locusName: DYS393
+    - chromosome: chrY
+      locusStart: 4402819
+      locusEnd: 4403078
+      locusName: DYS456
+    - chromosome: chrY
+      locusStart: 7999739
+      locusEnd: 8000002
+      locusName: DYS458
+    - chromosome: chrY
+      locusStart: 8349874
+      locusEnd: 8350133
+      locusName: DYS449
+    - chromosome: chrY
+      locusStart: 8781844
+      locusEnd: 8782249
+      locusName: DYS627
+    - chromosome: chrY
+      locusStart: 15207888
+      locusEnd: 15208288
+      locusName: DYS518
