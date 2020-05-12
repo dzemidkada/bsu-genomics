@@ -1,0 +1,5 @@
+batches:
+    - name: batch1
+      path: data/snp_batches/batch1_variants.snps.ann.xlsx
+    - name: batch2
+      path: data/snp_batches/batch2_variants.snps.ann.xlsx

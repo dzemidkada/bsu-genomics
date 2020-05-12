@@ -99,7 +99,7 @@ class TemplateMatcher:
             n_repeats = 0
             for m in matches:
                 if m._id != cp:
-                  continue
+                    continue
                 match_ = text[m._l:m._r+1]
                 colors = ['green'] + ['blue'] * (len(match_) - 1)
                 for i in range(m._l, m._r+1):

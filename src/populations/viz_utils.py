@@ -6,6 +6,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve, auc
 from lightgbm import plot_importance
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 import plotly.express as px
 from plotly.offline import download_plotlyjs, init_notebook_mode, iplot
@@ -14,7 +15,7 @@ init_notebook_mode(connected=True)
 
 
 def plot_scatter_plotly(embed_df, ref_df, col):
-    tmp_df = pd.DataFrame({"x": embed_df[:,0], "y": embed_df[:,1], "z": embed_df[:,2], col: ref_df[col], 'size': 10})
+    tmp_df = pd.DataFrame({"x": embed_df[:,0], "y": embed_df[:,1], "z": embed_df[:,2], col: ref_df[col], 'size': 5})
     fig = px.scatter_3d(tmp_df, x='x', y='y', z='z', color=col)
     fig.show()
     
@@ -25,7 +26,7 @@ def plot_scatter(embed_df, ref_df, col):
     ax = fig.add_subplot(111, projection='3d')
   
     ax.scatter(tmp_df['x'], tmp_df['y'], tmp_df['z'],
-               c=pd.Categorical(ref_df[col]).codes, cmap="Set2_r", s=60)
+               c=pd.Categorical(ref_df[col]).codes, cmap="Set2_r", s=10)
   
     # make simple, bare axis lines through space:
     xAxisLine = ((min(tmp_df['x']), max(tmp_df['x'])), (0, 0), (0,0))
@@ -42,11 +43,26 @@ def plot_scatter(embed_df, ref_df, col):
     ax.set_title("PCA result")
     plt.show()
 
+
+def one_hot_encode(x):
+    enc = OneHotEncoder(handle_unknown='ignore')
+    enc.fit(x)
+    return enc.transform(x).toarray()
     
-def vizualize_pca(ds, hue):
-    X_scaled = StandardScaler().fit_transform(ds.features)
+    
+def vizualize_pca(ds, hue, one_hot=False, outliers_mult = 3):
+    X = ds.features
+    X = one_hot_encode(X) if one_hot else X
+    X_scaled = StandardScaler().fit_transform(X)
     X_scaled_pca = PCA(n_components=3).fit_transform(X_scaled)
-    plot_scatter_plotly(X_scaled_pca, ds.df, hue)
+    # Remove outliers
+    X_pca_mean = X_scaled_pca.mean(axis=0)
+    X_pca_std = X_scaled_pca.std(axis=0)
+    good_index = (
+        (X_scaled_pca > X_pca_mean - outliers_mult * X_pca_std).all(axis=1)) & (
+        (X_scaled_pca < X_pca_mean + outliers_mult * X_pca_std).all(axis=1)
+    )
+    plot_scatter_plotly(X_scaled_pca[good_index], ds.df[good_index], hue)
 
 
 def plot_roc_aucs(tps):
