@@ -1,26 +1,21 @@
-import json
-import base64
 import os
-os.chdir(os.environ['PROJECT_ROOT'])
 
 import dash
-import dash_html_components as html
-import dash_core_components as dcc
-from dash.dependencies import Input, Output
-import dash_bio
-import dash_table
 import pandas as pd
+from dash.dependencies import Input, Output
+
+from config import SURVEYS_DATA_PATH
+from layout import (data_overview_layout, main_layout, new_placeholder,
+                    samples_map_layout)
+from utils import filter_by_region, update_source
+
+os.chdir(os.environ['PROJECT_ROOT'])
 
 
 def init_dependecies():
-    # Tab 1
-    global data_table, view_data_table
-    source_data_table = pd.read_csv('data/apps/map/survey_data_v1.csv')
-    view_data_table = source_data_table.copy()
-
-    global regions_map, regions_map_encoded
-    regions_map = 'data/apps/map/belarus_regions.png'
-    regions_map_encoded = base64.b64encode(open(regions_map, 'rb').read()).decode('ascii')
+    global SOURCE_DATA_TABLE
+    SOURCE_DATA_TABLE = pd.read_csv(SURVEYS_DATA_PATH).sample(10)
+    SOURCE_DATA_TABLE['valid'] = True
 
 
 init_dependecies()
@@ -28,103 +23,40 @@ init_dependecies()
 
 app = dash.Dash(__name__)
 
-app.layout = html.Div(id='map-body', className='app-body', children=[
-    html.Div([
-        html.Div(className='h-text', children=[
-            html.H1('Geo visualization')
-        ]),
-        dcc.Tabs(id='map-app-tabs', value='data-overview-tab', children=[
-            dcc.Tab(
-                label='Survey data overview',
-                value='data-overview-tab',
-                className='custom-tab',
-                selected_className='custom-tab--selected'
-            ),
-            dcc.Tab(
-                label='Geo visualization',
-                value='map-tab',
-                className='custom-tab',
-                selected_className='custom-tab--selected'
-            ),
-        ]),
-        html.Div(id='tab-content')
-    ])
-])
+app.layout = main_layout()
 
 
-def envelope_dataframe(df):
-    def _data_table_style():
-        return {
-            'page_action': 'none',
-            'fixed_rows': {'headers': True},
-            'style_table': {
-                "width": 'auto', 'height': '600px', 'overflowX': 'auto', 'overflowY': 'auto'
-            },
-            'style_cell': {
-                'whiteSpace': 'normal', 'height': 'auto',
-                },
-            'style_data': {
-                'whiteSpace': 'normal', 'height': 'auto'
-            },
-            'filter_action': "native",
-            'sort_action': "native",
-            'sort_mode': "multi"
-        }
+@app.callback(Output('data-table-div', 'children'),
+              [Input('region-radio', 'value')])
+def render_data_table_content(region):
+    global SOURCE_DATA_TABLE
 
-    return dash_table.DataTable(
-        id='table',
-        columns=[{"name": i, "id": i} for i in df.columns],
-        data=df.to_dict('records'),
-        #**_data_table_style()
-    )
+    filtered_data = filter_by_region(SOURCE_DATA_TABLE, region)
 
-def data_overview_layout():
-    return html.Div(className='h-text', children=[
-        html.H3('Survey Data'),
+    return data_overview_layout(filtered_data)
 
-        html.Div(
-            id='surveys-data-table',
-            children=[
-                envelope_dataframe(view_data_table)
-            ]
-        )
-    ])
 
-def generate_folium_map():
-    return html.P('kek')
-    # html.Iframe(
-    #     id='folium-interative-map',
-    #     srcDoc=open('data/apps/map/survey_data_v1.html', 'r').read()
-    # )
+@app.callback(Output('map-visualization-div', 'children'),
+              [Input('region-radio', 'value')])
+def render_map_visualization_content(region):
+    global SOURCE_DATA_TABLE
 
-def samples_map():
-    return html.Div([
-        html.Div(className='h-text', children=[
-            html.H3('BelPop2018 + Autosomal2020'),
-        ]),
-        html.Div(
-            className='row',
-            children=[
-                html.Div(className='two-thirds column', children=[
-                    generate_folium_map()
-                ]),
-                # Reference image
-                html.Img(
-                    className='one-third column',
-                    id='static-regions-map',
-                    src='data:image/png;base64,{}'.format(regions_map_encoded)
-                )
-            ]
-        )
-    ])
+    filtered_data = filter_by_region(SOURCE_DATA_TABLE, region)
 
-@app.callback(Output('tab-content', 'children'),
-              [Input('map-app-tabs', 'value')])
-def render_content(tab):
-    if tab == 'data-overview-tab':
-        return data_overview_layout()
-    if tab == 'map-tab':
-        return samples_map()
+    return samples_map_layout(filtered_data)
+
+
+@app.callback(
+    Output('placeholder', 'children'),
+    [Input('data_table', 'data'),
+     Input('data_table', 'columns')]
+)
+def save_data_table_changes(rows, columns):
+    global SOURCE_DATA_TABLE
+
+    affected_subset = pd.DataFrame(rows, columns=[c['name'] for c in columns])
+    SOURCE_DATA_TABLE = update_source(SOURCE_DATA_TABLE, affected_subset)
+    return new_placeholder()
 
 
 if __name__ == '__main__':
