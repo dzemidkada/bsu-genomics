@@ -9,17 +9,35 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 import plotly.express as px
+import seaborn as sns
 from plotly.offline import download_plotlyjs, init_notebook_mode, iplot
 from plotly.graph_objs import *
 init_notebook_mode(connected=True)
 
 
 def plot_scatter_plotly(embed_df, ref_df, col):
-    tmp_df = pd.DataFrame({"x": embed_df[:,0], "y": embed_df[:,1], "z": embed_df[:,2], col: ref_df[col], 'size': 5})
+    tmp_df = pd.DataFrame({"x": embed_df[:,0],
+                           "y": embed_df[:,1],
+                           "z": embed_df[:,2],
+                           col: ref_df[col],
+                           'id': ref_df['id'],
+                           'size': 5})
     fig = px.scatter_3d(tmp_df, x='x', y='y', z='z', color=col)
     fig.show()
     
+def plot_heatmap(df, title):
+    fig = plt.figure(figsize=(6, 6))
+    ax = fig.add_subplot(111)
+    
+    pivot_df = df.pivot("Group1", "Group2", "Test ROC AUC")
 
+    sns.heatmap(pivot_df, ax=ax, annot=True, cmap="YlGnBu")
+    ax.set_xlabel("Group1")
+    ax.set_ylabel("Group2")
+    ax.set_title(title)
+    plt.show()    
+    
+    
 def plot_scatter(embed_df, ref_df, col):
     tmp_df = pd.DataFrame({"x": embed_df[:,0], "y": embed_df[:,1], "z": embed_df[:,2], col: ref_df[col]})
     fig = plt.figure(figsize=(13, 13))

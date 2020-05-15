@@ -28,7 +28,6 @@ class STRDataset:
     def _init_dataset(self):
         self._keys = filter_keys(self._df, STR_KEY_COLUMNS)
         self._loci = filter_non_keys(self._df, STR_KEY_COLUMNS)
-        
         self._patch_alleles()
         self._drop_nan_records()
       
@@ -57,8 +56,8 @@ class STRDataset:
             self._df[col] = self._df[col].apply(lambda x: __parse_value(x))
     
     def _drop_nan_records(self):
-        self._df = self._df.fillna(0)
-        corrupted_index = self._df.loc[((self._df[self._loci] == 0).sum(axis=1) > 0)].index
+        self._df = self._df.fillna(-999)
+        corrupted_index = self._df.loc[((self._df[self._loci] == -999).sum(axis=1) > 0)].index
         self._df = self._df.drop(corrupted_index, axis=0).reset_index(drop=True)
         
     def describe(self):
@@ -107,6 +106,29 @@ class STRDatasetsHandler:
         result_df = result_df[filter_keys(result_df, STR_KEY_COLUMNS) + loci_set]
        
         self._datasets[new_id] = STRDataset(df=result_df)
+    
+    def one_hot_encode(self, old_id, new_id):
+        def __one_hot_encode_dataset(ds):
+            from sklearn.preprocessing import OneHotEncoder
+
+            df = ds.df
+            f = ds.loci
+            result = []
+            for i in range(0, len(f), 2):
+                base_f = f[i].split('-')[0]
+                values = pd.concat([df[f[i]].rename({f[i]: base_f}),
+                                    df[f[i+1]].rename({f[i+1]: base_f})],
+                                   axis=0)
+                oh = OneHotEncoder().fit(pd.DataFrame(values))
+                res1 = oh.transform(df[[f[i]]]).todense()
+                res2 = oh.transform(df[[f[i+1]]]).todense()
+                result.append(pd.DataFrame(res1+res2,
+                                           columns = list(map(lambda x: f'{base_f}, {x}',
+                                                              oh.categories_[0].tolist()))))
+            result = pd.concat(result + [df[[x for x in df.columns if x not in f]]], axis=1)
+            return STRDataset(df=result)
+        
+        self._datasets[new_id] = __one_hot_encode_dataset(self._datasets[old_id])
     
     def get(self, k):
         return self._datasets[k]

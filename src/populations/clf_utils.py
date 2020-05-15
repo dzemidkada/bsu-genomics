@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from IPython.core.display import HTML
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+from scipy import stats
 
 def display_correlation_with_target(x, y, features):
     display(HTML('<h3>Correlation with target</h3>'))
@@ -90,7 +91,7 @@ def modeling_step(X, y, X_test, model, model_type, folds, n_fold=10):
 def model_selection(X_train, y_train, X_test, y_test, folds, title):
     results = defaultdict(list)
     best_preds, best_cv_mean = None, 0
-    for model_type in ['sklearn', 'glm', 'cat']:
+    for model_type in ['sklearn', 'cat']:
         if model_type == 'sklearn':
             for name, model in [
                     ('rf', RandomForestClassifier(n_estimators=100, max_leaf_nodes=5)),
@@ -126,9 +127,26 @@ def model_selection(X_train, y_train, X_test, y_test, folds, title):
         [y_test, np.ones(y_test.shape[0]) * (np.mean(y_train) < 0.5), f'{title} Test AUC (majority)'],
         [y_test, best_preds[1], f'{title} Test AUC']
     ])
+    
+    return roc_auc_score(y_test, best_preds[1])
 
-def one_vs_one_clfs(df, features, target, folds):
+def display_ks_test(x, y, features):
+    display(HTML('<h3>KS test</h3>'))
+    results = {'Feature': [], 'KS value': [], 'KS p-value': []}
+    for c in features:
+        v, p = stats.ks_2samp(x[c].values[y == 0], x[c].values[y == 1])
+        results['Feature'].append(c)
+        results['KS value'].append(v)
+        results['KS p-value'].append(p)
+        
+    display(pd.DataFrame(results).sort_values(['KS p-value']).T)
+        
+
+def one_vs_one_clfs(ds, target, folds):
+    df = ds.df
+    features = ds.loci
     groups = df[target].value_counts().index
+    results = []
     for i, group0 in enumerate(groups):
         for j, group1 in enumerate(groups):
             if group0 != group1 and i < j:
@@ -147,10 +165,16 @@ def one_vs_one_clfs(df, features, target, folds):
                 # Correlations
                 display_correlation_with_target(X_train, y_train, features)
                 
-                model_selection(X_train, y_train, X_test, y_test, folds, title)
+                display_ks_test(X_train, y_train, features)
+
+                roc_auc_test = model_selection(X_train, y_train, X_test, y_test, folds, title)
+                results.append([group0, group1, roc_auc_test])
+    return pd.DataFrame(results, columns=['Group1', 'Group2', 'Test ROC AUC'])
 
 
-def one_vs_all_clfs(df, features, target, folds):
+def one_vs_all_clfs(ds, target, folds):
+    df = ds.df
+    features = ds.loci
     groups = df[target].unique()
 
     for group in groups:
