@@ -1,19 +1,21 @@
-from lightgbm import LGBMClassifier, Dataset, train
-from sklearn.model_selection import train_test_split
-from sklearn import linear_model
-from populations.viz_utils import plot_roc_aucs, lgbm_fe
-import pandas as pd
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import roc_curve, auc
-import numpy as np
 from collections import defaultdict
-from catboost import CatBoostClassifier
+
+import numpy as np
+import pandas as pd
 import statsmodels.api as sm
-from sklearn.ensemble import RandomForestClassifier
+from catboost import CatBoostClassifier
 from IPython.core.display import HTML
+from lightgbm import Dataset, LGBMClassifier, train
+from scipy import stats
+from sklearn import linear_model
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import auc, roc_auc_score, roc_curve
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from scipy import stats
+
+from populations.viz_utils import lgbm_fe, plot_roc_aucs
+
 
 def display_correlation_with_target(x, y, features):
     display(HTML('<h3>Correlation with target</h3>'))
@@ -22,13 +24,13 @@ def display_correlation_with_target(x, y, features):
     corrs = corrs[corrs['level_0'] != corrs['level_1']]
     corrs = corrs[corrs['level_0'] == 'target']
     display(corrs.T)
-    
-    
-def modeling_step(X, y, X_test, model, model_type, folds, n_fold=10):  
+
+
+def modeling_step(X, y, X_test, model, model_type, folds, n_fold=10):
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
     X_test = scaler.transform(X_test)
-    
+
     train_prediction = np.zeros(len(X))
     test_prediction = np.zeros(len(X_test))
     scores = []
@@ -39,52 +41,53 @@ def modeling_step(X, y, X_test, model, model_type, folds, n_fold=10):
 
         if model_type == 'cat':
             cat_params = {'learning_rate': 0.02,
-              'depth': 5,
-              'l2_leaf_reg': 10,
-              'bootstrap_type': 'Bernoulli',
-              #'metric_period': 500,
-              'od_type': 'Iter',
-              'od_wait': 50,
-              'random_seed': 11,
-              'allow_writing_files': False}
-            model = CatBoostClassifier(iterations=1000,  eval_metric='AUC', **cat_params)
-            model.fit(X_train, y_train, eval_set=(X_valid, y_valid), cat_features=[], use_best_model=True, verbose=False)
+                          'depth': 5,
+                          'l2_leaf_reg': 10,
+                          'bootstrap_type': 'Bernoulli',
+                          # 'metric_period': 500,
+                          'od_type': 'Iter',
+                          'od_wait': 50,
+                          'random_seed': 11,
+                          'allow_writing_files': False}
+            model = CatBoostClassifier(
+                iterations=1000,  eval_metric='AUC', **cat_params)
+            model.fit(X_train, y_train, eval_set=(X_valid, y_valid),
+                      cat_features=[], use_best_model=True, verbose=False)
 
             y_pred = model.predict(X_test)
             y_pred_train = model.predict(X)
             y_pred_valid = model.predict(X_valid)
-            
-            
+
         if model_type == 'sklearn':
             model = model
             model.fit(X_train, y_train)
             y_pred_valid = model.predict(X_valid).reshape(-1,)
             score = roc_auc_score(y_valid, y_pred_valid)
-            
+
             t = (lambda x: model.predict_proba(x)[:, 1]) \
                 if model.__module__ != 'sklearn.svm._classes' else lambda x: model.decision_function(x)
             y_pred = t(X_test)
             y_pred_train = t(X)
             y_pred_valid = t(X_valid)
-            
+
         if model_type == 'glm':
             model = sm.GLM(y_train, X_train, family=sm.families.Binomial())
             model_results = model.fit()
             model_results.predict(X_test)
             y_pred_valid = model_results.predict(X_valid).reshape(-1,)
             score = roc_auc_score(y_valid, y_pred_valid)
-            
+
             y_pred = model_results.predict(X_test)
             y_pred_train = model_results.predict(X)
             y_pred_valid = model_results.predict(X_valid)
-            
+
         scores.append(roc_auc_score(y_valid, y_pred_valid))
 
         train_prediction += y_pred_train
         test_prediction += y_pred
-        
+
     train_prediction /= n_fold
-    test_prediction /= n_fold    
+    test_prediction /= n_fold
     return (train_prediction, test_prediction), scores
 
 
@@ -94,8 +97,10 @@ def model_selection(X_train, y_train, X_test, y_test, folds, title):
     for model_type in ['sklearn', 'cat']:
         if model_type == 'sklearn':
             for name, model in [
-                    ('rf', RandomForestClassifier(n_estimators=100, max_leaf_nodes=5)),
-                    ('lr c1e-2', linear_model.LogisticRegression(class_weight='balanced', penalty='l1', C=1e-2, solver='liblinear')),
+                    ('rf', RandomForestClassifier(
+                        n_estimators=100, max_leaf_nodes=5)),
+                    ('lr c1e-2', linear_model.LogisticRegression(class_weight='balanced',
+                                                                 penalty='l1', C=1e-2, solver='liblinear')),
                     ('svc', SVC())
             ]:
                 results['Model'].append(f'{model_type} {name}')
@@ -121,14 +126,16 @@ def model_selection(X_train, y_train, X_test, y_test, folds, title):
     display(HTML(f'<h3>CV results</h3>'))
 
     display(pd.DataFrame(results))
-    
+
     plot_roc_aucs([
         [y_train, best_preds[0], f'{title} Train AUC'],
-        [y_test, np.ones(y_test.shape[0]) * (np.mean(y_train) < 0.5), f'{title} Test AUC (majority)'],
+        [y_test, np.ones(y_test.shape[0]) * (np.mean(y_train)
+                                             < 0.5), f'{title} Test AUC (majority)'],
         [y_test, best_preds[1], f'{title} Test AUC']
     ])
-    
+
     return roc_auc_score(y_test, best_preds[1])
+
 
 def display_ks_test(x, y, features):
     display(HTML('<h3>KS test</h3>'))
@@ -138,9 +145,9 @@ def display_ks_test(x, y, features):
         results['Feature'].append(c)
         results['KS value'].append(v)
         results['KS p-value'].append(p)
-        
+
     display(pd.DataFrame(results).sort_values(['KS p-value']).T)
-        
+
 
 def one_vs_one_clfs(ds, target, folds):
     df = ds.df
@@ -158,16 +165,17 @@ def one_vs_one_clfs(ds, target, folds):
                 display(data[target].value_counts())
 
                 X_train, X_test, y_train, y_test = train_test_split(
-                    data[features], data[target], stratify = data[target], shuffle=True, test_size=0.2, random_state=42)
+                    data[features], data[target], stratify=data[target], shuffle=True, test_size=0.2, random_state=42)
                 y_train = (y_train == group1).astype('int')
                 y_test = (y_test == group1).astype('int')
 
                 # Correlations
                 display_correlation_with_target(X_train, y_train, features)
-                
+
                 display_ks_test(X_train, y_train, features)
 
-                roc_auc_test = model_selection(X_train, y_train, X_test, y_test, folds, title)
+                roc_auc_test = model_selection(
+                    X_train, y_train, X_test, y_test, folds, title)
                 results.append([group0, group1, roc_auc_test])
     return pd.DataFrame(results, columns=['Group1', 'Group2', 'Test ROC AUC'])
 
@@ -183,7 +191,7 @@ def one_vs_all_clfs(ds, target, folds):
         data = df.copy()
 
         X_train, X_test, y_train, y_test = train_test_split(
-            data[features], data[target], stratify = data[target], shuffle=True, test_size=0.2, random_state=42)
+            data[features], data[target], stratify=data[target], shuffle=True, test_size=0.2, random_state=42)
         y_train = (y_train == group).astype('int')
         y_test = (y_test == group).astype('int')
 
@@ -191,5 +199,3 @@ def one_vs_all_clfs(ds, target, folds):
         display_correlation_with_target(X_train, y_train, features)
 
         model_selection(X_train, y_train, X_test, y_test, folds, title)
-           
-           
