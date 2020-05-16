@@ -14,8 +14,7 @@ os.chdir(os.environ['PROJECT_ROOT'])
 
 def init_dependecies():
     global SOURCE_DATA_TABLE
-    SOURCE_DATA_TABLE = pd.read_csv(SURVEYS_DATA_PATH).sample(10)
-    SOURCE_DATA_TABLE['valid'] = True
+    SOURCE_DATA_TABLE = pd.read_csv(SURVEYS_DATA_PATH)
 
 
 init_dependecies()

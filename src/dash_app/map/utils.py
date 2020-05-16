@@ -25,7 +25,7 @@ def build_map(filtered_data):
 
     for _, row in filtered_data.iterrows():
         if not row.valid:
-            return
+            continue
         marker = folium.Marker(
             [row.lat, row.long],
             popup=f'{row.id}',
@@ -39,15 +39,12 @@ def build_map(filtered_data):
 
 
 def update_source(source_df, affected_df):
-    if 'region' in affected_df.columns:
-        regions = affected_df.region.unique().tolist()
-        if len(regions) > 1:
-            source_df = affected_df
-        else:
-            source_df = pd.concat([
-                source_df[~source_df.region.isin(regions)],
-                affected_df
-            ]).reset_index(drop=True)
+    if 'id' in affected_df.columns:
+        affected_ids = affected_df.id.unique().tolist()
+        source_df = pd.concat([
+            source_df[~source_df.id.isin(affected_ids)],
+            affected_df
+        ]).reset_index(drop=True)
     return source_df
 
 

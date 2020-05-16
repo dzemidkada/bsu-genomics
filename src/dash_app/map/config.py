@@ -16,7 +16,7 @@ REGIONS_COLOR_MAPPING = {
     'Понеманье': 'pink'
 }
 
-SURVEYS_DATA_PATH = 'data/apps/map/survey_data_v1.csv'
+SURVEYS_DATA_PATH = 'data/apps/map/survey_data_v2.csv'
 
 REGIONS_MAP_REF = 'data/apps/map/belarus_regions.png'
 
