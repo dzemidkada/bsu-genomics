@@ -2,8 +2,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 
-from config import REGIONS_MAP_REF, REGIONS_MAPPING
-from utils import build_map, dummy_df, read_image
+from dash_app.map.config import REGIONS_MAP_REF, REGIONS_MAPPING
+from dash_app.map.utils import build_map, dummy_df, read_image
 
 
 def main_layout():

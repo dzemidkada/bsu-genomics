@@ -4,3 +4,8 @@ __pycache__/
 .vscode/
 *.code-workspace
 .idea
+__init__.py
+!data/str_data/get_bam_files.sh
+!data/str_data/get_loci_reads.sh
+!data/str_data/str_codic_and_indels.txt
+!data/str_data/STR_patterns.xlsx

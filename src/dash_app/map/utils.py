@@ -3,8 +3,8 @@ import base64
 import folium
 import pandas as pd
 
-from config import (MAP_DEFAULT_START_PARAMS, REGIONS_COLOR_MAPPING,
-                    REGIONS_MAPPING)
+from dash_app.map.config import (MAP_DEFAULT_START_PARAMS,
+                                 REGIONS_COLOR_MAPPING, REGIONS_MAPPING)
 
 
 def read_image(path):

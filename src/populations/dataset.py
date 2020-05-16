@@ -54,6 +54,25 @@ class STRDataset:
 
         for col in self._loci:
             self._df[col] = self._df[col].apply(lambda x: __parse_value(x))
+            
+    def patch_ids(self, prefix):
+        if 'id' in self._df.columns:
+            self._df.id = prefix + self._df.id.astype('str')
+            
+    def patch_meta_data(self, survey, cols):
+        self._df.id = self._df.id.astype('str')
+        self._df = pd.merge(
+            survey[survey.valid][cols + ['region', 'lat', 'long']],
+            self._df,
+            on=cols,
+            how='left'
+        )
+        print(f'Records patched: {(self._df.region_x != self._df.region_y).sum()}')
+        self._df = (
+            self._df[~self._df.region_y.isna()]
+            .rename(columns={'region_x': 'region'})
+            .drop('region_y', axis=1)
+        )
     
     def _drop_nan_records(self):
         self._df = self._df.fillna(-999)

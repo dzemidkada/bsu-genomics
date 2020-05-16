@@ -4,10 +4,10 @@ import dash
 import pandas as pd
 from dash.dependencies import Input, Output
 
-from config import SURVEYS_DATA_PATH
-from layout import (data_overview_layout, main_layout, new_placeholder,
-                    samples_map_layout)
-from utils import filter_by_region, update_source
+from dash_app.map.config import SURVEYS_DATA_PATH
+from dash_app.map.layout import (data_overview_layout, main_layout,
+                                 new_placeholder, samples_map_layout)
+from dash_app.map.utils import filter_by_region, update_source
 
 os.chdir(os.environ['PROJECT_ROOT'])
 
