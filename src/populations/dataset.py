@@ -3,7 +3,7 @@ import pandas as pd
 
 from config import Config
 
-STR_KEY_COLUMNS = ('population', 'region', 'nationality', 'id', 'source')
+STR_KEY_COLUMNS = ('population', 'region', 'nationality', 'id', 'source', 'lat', 'long')
 SNP_KEY_COLUMNS = ('s_id', 'db_id', 'birth_region_id',
                    'ethnographic_group_id', 'appearance_type')
 
@@ -63,17 +63,19 @@ class STRDataset:
     def patch_meta_data(self, survey, cols):
         self._df.id = self._df.id.astype('str')
         self._df = pd.merge(
-            survey[survey.valid][cols + ['region', 'lat', 'long']],
             self._df,
+            survey[survey.valid],
             on=cols,
             how='left'
         )
+        self._df.region_y = self._df.region_y.fillna(self._df.region_x)
+        self._df.valid = self._df.valid.fillna(True)
         print(
             f'Records patched: {(self._df.region_x != self._df.region_y).sum()}')
         self._df = (
-            self._df[~self._df.region_y.isna()]
+            self._df[self._df.valid]
             .rename(columns={'region_x': 'region'})
-            .drop('region_y', axis=1)
+            .drop(['region_y', 'valid'], axis=1)
         )
 
     def _drop_nan_records(self):

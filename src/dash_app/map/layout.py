@@ -57,16 +57,20 @@ def ethnogeographic_regions_image():
     )
 
 
-def create_data_table(filtered_data):
+def create_data_table(filtered_data, editable=True, table_height=600):
     def _data_table_style():
         return {
             'page_action': 'none',
             'fixed_rows': {'headers': True},
             'style_table': {
-                "width": 'auto', 'height': '600px', 'overflowX': 'auto', 'overflowY': 'auto'
+                'height': f'{table_height}px',
+                'overflowX': 'auto', 'overflowY': 'auto'
             },
             'style_cell': {
-                'whiteSpace': 'normal', 'height': 'auto', 'padding': '3px'
+                'whiteSpace': 'normal', 'height': 'auto', 'padding': '3px',
+                'minWidth': '180px', 'width': '180px', 'maxWidth': '180px',
+                'overflow': 'hidden',
+                'textOverflow': 'ellipsis',
             },
             'style_data': {
                 'whiteSpace': 'normal', 'height': 'auto'
@@ -76,7 +80,8 @@ def create_data_table(filtered_data):
             'sort_mode': "multi",
             'style_header': {
                 'backgroundColor': 'white',
-                'fontWeight': 'bold'
+                'fontWeight': 'bold',
+                'width': 'auto'
             }
         }
 
@@ -84,7 +89,7 @@ def create_data_table(filtered_data):
         id='data_table',
         columns=[{"name": i, "id": i} for i in filtered_data.columns],
         data=filtered_data.to_dict('records'),
-        editable=True,
+        editable=editable,
         export_format='xlsx',
         export_headers='display',
         **_data_table_style()

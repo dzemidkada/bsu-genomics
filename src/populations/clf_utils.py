@@ -3,6 +3,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
+from sklearn.model_selection import RandomizedSearchCV
 from catboost import CatBoostClassifier
 from IPython.core.display import HTML
 from lightgbm import Dataset, LGBMClassifier, train
@@ -11,10 +12,11 @@ from sklearn import linear_model
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import auc, roc_auc_score, roc_curve
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.svm import SVC
 
 from populations.viz_utils import lgbm_fe, plot_roc_aucs
+from sklearn.metrics import classification_report, confusion_matrix
 
 
 def display_correlation_with_target(x, y, features):
@@ -24,104 +26,126 @@ def display_correlation_with_target(x, y, features):
     corrs = corrs[corrs['level_0'] != corrs['level_1']]
     corrs = corrs[corrs['level_0'] == 'target']
     display(corrs.T)
+    
+    
+    
+PARAMS = {
+    'cat_def': {
+        'iterations': 500, 
+        'eval_metric': 'AUC',
+        'random_seed': 11,
+        'allow_writing_files': False,
+        'loss_function': 'Logloss'
+    },
+    'cat_cv': {
+        'depth': [4],
+        'learning_rate': [1e-2],
+        'l2_leaf_reg': [10]
+    },
+    'rf_cv': {
+        'n_estimators': [10, 30, 50],
+        'max_features': ['auto', 'sqrt'],
+        'max_depth': [2, 3],
+        'min_samples_leaf': [1, 2, 4],
+        'min_samples_split': [2, 5, 10],
+        'bootstrap': [True, False]
+    },
+    'lr_cv': {
+        'penalty': ['l1', 'l2'],
+        'C': [1e-5, 1e-3, 1e-1, 10, 100],
+        'class_weight': ['balanced'],
+        'solver': ['lbfgs', 'liblinear'],
+     },
+    'svm_cv': {
+        'C': [1e-5, 1e-3, 1e-1, 10, 100],
+        'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
+        'degree': [2, 3],
+     }    
+}
 
 
-def modeling_step(X, y, X_test, model, model_type, folds, n_fold=10):
-    scaler = StandardScaler()
+def cvgrid_search(X, y, X_test, model_type):
+    X_train, X_val, y_train, y_val = train_test_split(
+        X, y, stratify=y, shuffle=True, test_size=0.2, random_state=42)
+
+    if model_type == 'cat':
+        model = CatBoostClassifier(**PARAMS['cat_def'])
+        grid_search_result = model.grid_search(PARAMS['cat_cv'], X=X, y=y, plot=False, cv=5, stratified=True, verbose=0)
+        best_model = CatBoostClassifier(**PARAMS['cat_def'], **grid_search_result['params'])
+        
+        best_model.fit(X_train, y_train, eval_set=(X_val, y_val), verbose=0)
+        get_preds = lambda model, x: model.predict(x, prediction_type='Probability')[:, 1]
+
+    if model_type == 'rf':
+        rf = RandomForestClassifier()
+        rf_random = RandomizedSearchCV(estimator=rf,
+                                       param_distributions=PARAMS['rf_cv'], n_iter=50, cv=5,
+                                       verbose=0, random_state=42, n_jobs = -1)
+        # Tune hyperparams
+        rf_random.fit(X, y)
+        best_model = rf_random.best_estimator_
+        # Train set only
+        best_model.fit(X_train, y_train)
+        get_preds = lambda model, x: model.predict_proba(x)[:, 1]
+
+
+    if model_type == 'lr':
+        lr = linear_model.LogisticRegression()
+        lr_random = RandomizedSearchCV(estimator=lr,
+                                       param_distributions=PARAMS['lr_cv'], n_iter=50, cv=5,
+                                       verbose=0, random_state=42, n_jobs = -1)
+        # Tune hyperparams
+        lr_random.fit(X, y)
+        best_model = lr_random.best_estimator_
+        # Train set only
+        best_model.fit(X_train, y_train)
+        get_preds = lambda model, x: model.predict_proba(x)[:, 1]
+
+    if model_type == 'svm':
+        svc = SVC()
+        svc_random = RandomizedSearchCV(estimator=svc,
+                                       param_distributions=PARAMS['svm_cv'], n_iter=50, cv=5,
+                                       verbose=0, random_state=42, n_jobs = -1)
+        # Tune hyperparams
+        svc_random.fit(X, y)
+        best_model = svc_random.best_estimator_
+        # Train set only
+        best_model.fit(X_train, y_train)
+        get_preds = lambda model, x: model.decision_function(x)
+        
+    y_pred_train = get_preds(best_model, X_train)
+    y_pred_val = get_preds(best_model, X_val)
+    train_auc = roc_auc_score(y_train, y_pred_train)
+    val_auc = roc_auc_score(y_val, y_pred_val)
+    
+    # Final fit
+    best_model.fit(X, y)
+
+    return (get_preds(best_model, X), get_preds(best_model, X_test)), (train_auc, val_auc)
+
+
+def modeling_step(X, y, X_test, model_type):
+    # Scale features
+    scaler = MinMaxScaler()
     X = scaler.fit_transform(X)
     X_test = scaler.transform(X_test)
-
-    train_prediction = np.zeros(len(X))
-    test_prediction = np.zeros(len(X_test))
-    scores = []
-    feature_importance = pd.DataFrame()
-    for fold_n, (train_index, valid_index) in enumerate(folds.split(X, y)):
-        X_train, X_valid = X[train_index], X[valid_index]
-        y_train, y_valid = y[train_index], y[valid_index]
-
-        if model_type == 'cat':
-            cat_params = {'learning_rate': 0.02,
-                          'depth': 5,
-                          'l2_leaf_reg': 10,
-                          'bootstrap_type': 'Bernoulli',
-                          # 'metric_period': 500,
-                          'od_type': 'Iter',
-                          'od_wait': 50,
-                          'random_seed': 11,
-                          'allow_writing_files': False}
-            model = CatBoostClassifier(
-                iterations=1000,  eval_metric='AUC', **cat_params)
-            model.fit(X_train, y_train, eval_set=(X_valid, y_valid),
-                      cat_features=[], use_best_model=True, verbose=False)
-
-            y_pred = model.predict(X_test)
-            y_pred_train = model.predict(X)
-            y_pred_valid = model.predict(X_valid)
-
-        if model_type == 'sklearn':
-            model = model
-            model.fit(X_train, y_train)
-            y_pred_valid = model.predict(X_valid).reshape(-1,)
-            score = roc_auc_score(y_valid, y_pred_valid)
-
-            t = (lambda x: model.predict_proba(x)[:, 1]) \
-                if model.__module__ != 'sklearn.svm._classes' else lambda x: model.decision_function(x)
-            y_pred = t(X_test)
-            y_pred_train = t(X)
-            y_pred_valid = t(X_valid)
-
-        if model_type == 'glm':
-            model = sm.GLM(y_train, X_train, family=sm.families.Binomial())
-            model_results = model.fit()
-            model_results.predict(X_test)
-            y_pred_valid = model_results.predict(X_valid).reshape(-1,)
-            score = roc_auc_score(y_valid, y_pred_valid)
-
-            y_pred = model_results.predict(X_test)
-            y_pred_train = model_results.predict(X)
-            y_pred_valid = model_results.predict(X_valid)
-
-        scores.append(roc_auc_score(y_valid, y_pred_valid))
-
-        train_prediction += y_pred_train
-        test_prediction += y_pred
-
-    train_prediction /= n_fold
-    test_prediction /= n_fold
-    return (train_prediction, test_prediction), scores
+    
+    return cvgrid_search(X, y, X_test, model_type)
 
 
-def model_selection(X_train, y_train, X_test, y_test, folds, title):
+def model_selection(X_train, y_train, X_test, y_test, title, c1='0', c2='1'):
     results = defaultdict(list)
-    best_preds, best_cv_mean = None, 0
-    for model_type in ['sklearn', 'cat']:
-        if model_type == 'sklearn':
-            for name, model in [
-                    ('rf', RandomForestClassifier(
-                        n_estimators=100, max_leaf_nodes=5)),
-                    ('lr c1e-2', linear_model.LogisticRegression(class_weight='balanced',
-                                                                 penalty='l1', C=1e-2, solver='liblinear')),
-                    ('svc', SVC())
-            ]:
-                results['Model'].append(f'{model_type} {name}')
-                predictions, scores = modeling_step(
-                    X_train.values, y_train.values, X_test.values, model, model_type=model_type, folds=folds)
-                results['CV AUC mean'].append(np.mean(scores))
-                results['CV AUC std'].append(np.std(scores))
+    best_preds, best_val_mean = None, 0
+    for model_type in ['cat', 'rf', 'lr', 'svm']:
+        results['Model'].append(f'{model_type}')
+        predictions, trainval_scores = modeling_step(
+            X_train.values, y_train.values, X_test.values, model_type=model_type)
+        results['Train AUC'].append(trainval_scores[0])
+        results['Val AUC'].append(trainval_scores[1])
 
-                if np.mean(scores) > best_cv_mean:
-                    best_cv_mean = np.mean(scores)
-                    best_preds = predictions
-        else:
-            results['Model'].append(f'{model_type}')
-            predictions, scores = modeling_step(
-                X_train.values, y_train.values, X_test.values, model, model_type=model_type, folds=folds)
-            results['CV AUC mean'].append(np.mean(scores))
-            results['CV AUC std'].append(np.std(scores))
-
-            if np.mean(scores) > best_cv_mean:
-                best_cv_mean = np.mean(scores)
-                best_preds = predictions
+        if trainval_scores[1] > best_val_mean:
+            best_val_mean = trainval_scores[1]
+            best_preds = predictions
 
     display(HTML(f'<h3>CV results</h3>'))
 
@@ -133,7 +157,7 @@ def model_selection(X_train, y_train, X_test, y_test, folds, title):
                                              < 0.5), f'{title} Test AUC (majority)'],
         [y_test, best_preds[1], f'{title} Test AUC']
     ])
-
+    
     return roc_auc_score(y_test, best_preds[1])
 
 
@@ -149,7 +173,7 @@ def display_ks_test(x, y, features):
     display(pd.DataFrame(results).sort_values(['KS p-value']).T)
 
 
-def one_vs_one_clfs(ds, target, folds):
+def one_vs_one_clfs(ds, target):
     df = ds.df
     features = ds.loci
     groups = df[target].value_counts().index
@@ -175,12 +199,12 @@ def one_vs_one_clfs(ds, target, folds):
                 display_ks_test(X_train, y_train, features)
 
                 roc_auc_test = model_selection(
-                    X_train, y_train, X_test, y_test, folds, title)
+                    X_train, y_train, X_test, y_test, title, c1=group0, c2=group1)
                 results.append([group0, group1, roc_auc_test])
     return pd.DataFrame(results, columns=['Group1', 'Group2', 'Test ROC AUC'])
 
 
-def one_vs_all_clfs(ds, target, folds):
+def one_vs_all_clfs(ds, target):
     df = ds.df
     features = ds.loci
     groups = df[target].unique()
@@ -198,4 +222,4 @@ def one_vs_all_clfs(ds, target, folds):
         # Correlations
         display_correlation_with_target(X_train, y_train, features)
 
-        model_selection(X_train, y_train, X_test, y_test, folds, title)
+        model_selection(X_train, y_train, X_test, y_test, title)
