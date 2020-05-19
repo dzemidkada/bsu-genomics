@@ -1,0 +1,48 @@
+\documentclass[a4paper,14pt]{extreport}
+
+\usepackage[T1,T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+
+
+\usepackage{style/bsumain}
+\usepackage{style/bsumastertitle}
+\usepackage{blindtext}
+\usepackage{lipsum}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{url}
+
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{%
+  colorlinks = true,
+  linkcolor  = black
+}
+\usepackage[toc,page]{appendix}
+
+\graphicspath{{images/}}
+\begin{document}
+
+\maketitle
+
+{
+  \renewcommand{\contentsname}{Оглавление}
+  \tableofcontents
+}
+
+\chapter*{Перечень условных обозначений}
+
+\input characteristic.tex
+\input intro.tex
+
+\input chapter1.tex
+
+\input chapter2.tex
+
+\input chapter3.tex
+
+\input chapter4.tex
+
+
+
+\end{document}
