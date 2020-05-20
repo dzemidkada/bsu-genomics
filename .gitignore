@@ -13,3 +13,6 @@ data/str_data/*
 !data/str_data/get*
 !data/str_data/str*
 !data/str_data/STR*
+
+tethis/*.pdf
+tethis/*.gz
