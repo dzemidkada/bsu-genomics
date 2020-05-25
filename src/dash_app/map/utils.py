@@ -24,7 +24,7 @@ def build_map(filtered_data):
     m = folium.Map(**MAP_DEFAULT_START_PARAMS)
 
     for _, row in filtered_data.iterrows():
-        if not row.valid:
+        if 'valid' in filtered_data.columns and not row.valid:
             continue
         marker = folium.Marker(
             [row.lat, row.long],

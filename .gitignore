@@ -7,6 +7,8 @@ __pycache__/
 .idea
 __init__.py
 tethis/pdf/*
+tethis/images/*
+
 
 !data/str_data
 data/str_data/*

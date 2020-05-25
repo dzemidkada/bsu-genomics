@@ -3,7 +3,8 @@ import pandas as pd
 
 from config import Config
 
-STR_KEY_COLUMNS = ('population', 'region', 'nationality', 'id', 'source', 'lat', 'long')
+STR_KEY_COLUMNS = (
+    'population', 'region', 'nationality', 'id', 'source', 'lat', 'long')
 SNP_KEY_COLUMNS = ('s_id', 'db_id', 'birth_region_id',
                    'ethnographic_group_id', 'appearance_type')
 
@@ -64,9 +65,9 @@ class STRDataset:
         self._df.id = self._df.id.astype('str')
         self._df = pd.merge(
             self._df,
-            survey[survey.valid],
+            survey[survey.valid].drop(['nationality'], axis=1),
             on=cols,
-            how='left'
+            how='inner'
         )
         self._df.region_y = self._df.region_y.fillna(self._df.region_x)
         self._df.valid = self._df.valid.fillna(True)

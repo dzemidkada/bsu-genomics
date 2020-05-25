@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 import numpy as np
+from matplotlib import pyplot as plt
 import pandas as pd
 import statsmodels.api as sm
 from sklearn.model_selection import RandomizedSearchCV
@@ -14,7 +15,9 @@ from sklearn.metrics import auc, roc_auc_score, roc_curve
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.svm import SVC
-
+from sklearn.metrics import average_precision_score
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import auc
 from populations.viz_utils import lgbm_fe, plot_roc_aucs
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -26,12 +29,12 @@ def display_correlation_with_target(x, y, features):
     corrs = corrs[corrs['level_0'] != corrs['level_1']]
     corrs = corrs[corrs['level_0'] == 'target']
     display(corrs.T)
-    
-    
-    
+
+
+
 PARAMS = {
     'cat_def': {
-        'iterations': 500, 
+        'iterations': 500,
         'eval_metric': 'AUC',
         'random_seed': 11,
         'allow_writing_files': False,
@@ -60,7 +63,7 @@ PARAMS = {
         'C': [1e-5, 1e-3, 1e-1, 10, 100],
         'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
         'degree': [2, 3],
-     }    
+     }
 }
 
 
@@ -70,9 +73,9 @@ def cvgrid_search(X, y, X_test, model_type):
 
     if model_type == 'cat':
         model = CatBoostClassifier(**PARAMS['cat_def'])
-        grid_search_result = model.grid_search(PARAMS['cat_cv'], X=X, y=y, plot=False, cv=5, stratified=True, verbose=0)
+        grid_search_result = model.grid_search(PARAMS['cat_cv'], X=X_train, y=y_train, plot=False, cv=5, stratified=True, verbose=0)
         best_model = CatBoostClassifier(**PARAMS['cat_def'], **grid_search_result['params'])
-        
+
         best_model.fit(X_train, y_train, eval_set=(X_val, y_val), verbose=0)
         get_preds = lambda model, x: model.predict(x, prediction_type='Probability')[:, 1]
 
@@ -82,7 +85,7 @@ def cvgrid_search(X, y, X_test, model_type):
                                        param_distributions=PARAMS['rf_cv'], n_iter=50, cv=5,
                                        verbose=0, random_state=42, n_jobs = -1)
         # Tune hyperparams
-        rf_random.fit(X, y)
+        rf_random.fit(X_train, y_train)
         best_model = rf_random.best_estimator_
         # Train set only
         best_model.fit(X_train, y_train)
@@ -95,7 +98,7 @@ def cvgrid_search(X, y, X_test, model_type):
                                        param_distributions=PARAMS['lr_cv'], n_iter=50, cv=5,
                                        verbose=0, random_state=42, n_jobs = -1)
         # Tune hyperparams
-        lr_random.fit(X, y)
+        lr_random.fit(X_train, y_train)
         best_model = lr_random.best_estimator_
         # Train set only
         best_model.fit(X_train, y_train)
@@ -107,21 +110,23 @@ def cvgrid_search(X, y, X_test, model_type):
                                        param_distributions=PARAMS['svm_cv'], n_iter=50, cv=5,
                                        verbose=0, random_state=42, n_jobs = -1)
         # Tune hyperparams
-        svc_random.fit(X, y)
+        svc_random.fit(X_train, y_train)
         best_model = svc_random.best_estimator_
         # Train set only
         best_model.fit(X_train, y_train)
         get_preds = lambda model, x: model.decision_function(x)
-        
+
     y_pred_train = get_preds(best_model, X_train)
     y_pred_val = get_preds(best_model, X_val)
     train_auc = roc_auc_score(y_train, y_pred_train)
     val_auc = roc_auc_score(y_val, y_pred_val)
-    
+    train_ap = average_precision_score(y_train, y_pred_train)
+    val_ap = average_precision_score(y_val, y_pred_val)
+
     # Final fit
     best_model.fit(X, y)
 
-    return (get_preds(best_model, X), get_preds(best_model, X_test)), (train_auc, val_auc)
+    return (get_preds(best_model, X), get_preds(best_model, X_test)), (train_auc, val_auc), (train_ap, val_ap)
 
 
 def modeling_step(X, y, X_test, model_type):
@@ -129,22 +134,42 @@ def modeling_step(X, y, X_test, model_type):
     scaler = MinMaxScaler()
     X = scaler.fit_transform(X)
     X_test = scaler.transform(X_test)
-    
+
     return cvgrid_search(X, y, X_test, model_type)
 
+def plot_pr_curves(y_train, y_test, preds, title):
+    train_p, train_r, _ = precision_recall_curve(y_train, preds[0])
+    test_p, test_r, _ = precision_recall_curve(y_test, preds[1])
+
+    fig = plt.figure(figsize=(6, 6))
+    ax = fig.add_subplot(111)
+    ax.plot(train_r, train_p, linestyle='--', label=f'{title} Train PR')
+    ax.plot(test_r, test_p, linestyle='--', label=f'{title} Test PR')
+    no_skill = len(y_test[y_test==1]) / len(y_test)
+
+    ax.plot([0, 1], [no_skill, no_skill], linestyle='--', label=f'{title} Dummy clf PR')
+
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_title(title)
+    ax.legend()
+    plt.show()
+
+    return auc(test_r, test_p)
 
 def model_selection(X_train, y_train, X_test, y_test, title, c1='0', c2='1'):
     results = defaultdict(list)
     best_preds, best_val_mean = None, 0
     for model_type in ['cat', 'rf', 'lr', 'svm']:
         results['Model'].append(f'{model_type}')
-        predictions, trainval_scores = modeling_step(
+        predictions, trainval_auc_scores, trainval_pr_scores = modeling_step(
             X_train.values, y_train.values, X_test.values, model_type=model_type)
-        results['Train AUC'].append(trainval_scores[0])
-        results['Val AUC'].append(trainval_scores[1])
-
-        if trainval_scores[1] > best_val_mean:
-            best_val_mean = trainval_scores[1]
+        results['Train AUC'].append(trainval_auc_scores[0])
+        results['Val AUC'].append(trainval_auc_scores[1])
+        results['Train AP'].append(trainval_pr_scores[0])
+        results['Val AP'].append(trainval_pr_scores[1])
+        if trainval_pr_scores[1] > best_val_mean:
+            best_val_mean = trainval_pr_scores[1]
             best_preds = predictions
 
     display(HTML(f'<h3>CV results</h3>'))
@@ -154,11 +179,13 @@ def model_selection(X_train, y_train, X_test, y_test, title, c1='0', c2='1'):
     plot_roc_aucs([
         [y_train, best_preds[0], f'{title} Train AUC'],
         [y_test, np.ones(y_test.shape[0]) * (np.mean(y_train)
-                                             < 0.5), f'{title} Test AUC (majority)'],
+                                             < 0.5), f'{title} Dummy clf AUC'],
         [y_test, best_preds[1], f'{title} Test AUC']
     ])
-    
-    return roc_auc_score(y_test, best_preds[1])
+
+    test_pr_auc = plot_pr_curves(y_train, y_test, best_preds, title)
+
+    return test_pr_auc
 
 
 def display_ks_test(x, y, features):

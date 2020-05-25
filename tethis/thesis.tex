@@ -11,15 +11,15 @@
 \usepackage{multirow}
 \usepackage{amsmath}
 \usepackage{url}
-
+\usepackage[russian]{babel}
 \usepackage{listings}
 \usepackage{hyperref}
+\usepackage{bbm}
 \hypersetup{%
   colorlinks = true,
   linkcolor  = black
 }
 \usepackage[toc,page]{appendix}
-
 \graphicspath{{images/}}
 \begin{document}
 
@@ -30,8 +30,6 @@
   \tableofcontents
 }
 
-\chapter*{Перечень условных обозначений и сокращений}
-
 \input characteristic.tex
 \input intro.tex
 
@@ -39,10 +37,11 @@
 
 \input chapter2.tex
 
-\input chapter3.tex
-
 \input chapter4.tex
 
+\input chapter3.tex
+
+\input outro.tex
 
 
 \end{document}

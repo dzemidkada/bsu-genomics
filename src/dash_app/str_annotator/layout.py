@@ -42,8 +42,7 @@ def main_layout():
                                 html.Hr()
                             ]),
                             html.Div(id='read-results-tab-2')
-                        ]),
-                dcc.Tab(label='TODO', value='tab-3'),
+                        ])
             ]),
             html.Div(id='utils-tabs-content')
         ])

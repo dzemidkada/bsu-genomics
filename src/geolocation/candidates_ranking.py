@@ -1,49 +1,108 @@
 import numpy as np
 
-from geolocation.config import TARGET_AREA
-from geolocation.utils import mask_threshold, target_samples_mask
+from geolocation.config import AVAILABLE_LOCI
+from geolocation.distance import D, D_f, G, G_f
 
 
-class CandidatePointsGenerator:
-    def __init__(self, train_data, loci, linkage_agg=None):
-        self._train_data = train_data.copy()
-        self._loci = list(loci)
-        self._linkage_agg = linkage_agg or np.sum
+class RankingGeneratorBase:
+    def __init__(self, train_data, **params):
+        self._train_data = train_data
+        self._params = params
+        self.__preprocess_data()
 
-    def __generate_grid(self, grid_size):
-        return [
-            (x, y)
-            for x in np.linspace(*TARGET_AREA[0], grid_size)
-            for y in np.linspace(*TARGET_AREA[1], grid_size)
+    def __preprocess_data(self):
+        self._locations = self._train_data[['lat', 'long']].values
+
+    def rank_candidates(self, q, candidates):
+        raise NotImplementedError()
+
+    def get_params(self):
+        raise NotImplementedError()
+
+    def get_loci(self, q):
+        return list(set(q.columns).intersection(AVAILABLE_LOCI))
+
+
+class RankingGeneratorRandom(RankingGeneratorBase):
+    def __init__(self, train_data, **params):
+        super().__init__(train_data, **params)
+
+    def rank_candidates(self, q, candidates):
+        return np.random.choice(len(candidates), len(candidates), False)
+
+    def get_params(self):
+        return dict()
+
+
+class RankingGeneratorBestMatch(RankingGeneratorBase):
+    def __init__(self, train_data, **params):
+        super().__init__(train_data, **params)
+
+    def __get_best_match(self, q):
+        loci = self.get_loci(q)
+        return self._locations[
+            np.argsort(G(self._train_data[loci].values, q[loci].values))[-1]
         ]
 
-    def get_ranked_candidates(self, sample, hyperparams, n):
-        grid_size = int(hyperparams['grid_size'])
-        candidates_grid = self.__generate_grid(grid_size)
+    def rank_candidates(self, q, candidates):
+        best_match_location = self.__get_best_match(q)
+        return -D(candidates, best_match_location)
 
-        filtered_candidates = list()
-        for lat, long in candidates_grid:
-            # Euclid distance
-            distance = np.sqrt(
-                (self._train_data.lat - lat)**2 +
-                (self._train_data.long - long)**2
-            )
-            distance = np.exp(- distance * hyperparams['distance_sensitivity'])
-            # Genotype intersections
-            genotype_similarity = np.mean(
-                target_samples_mask(
-                    self._train_data, sample, self._loci),
-                axis=1
-            )
-            point_signal = self._linkage_agg(
-                mask_threshold(
-                    distance, hyperparams['distance_threshold'], reverse=True
-                ) * mask_threshold(
-                    genotype_similarity, hyperparams['similarity_threshold'])
-            )
-            if point_signal:
-                filtered_candidates.append((lat, long, point_signal))
+    def get_params(self):
+        return dict()
 
-        return sorted(
-            filtered_candidates, key=lambda x: x[2], reverse=True
-        )[:n]
+
+class RankingGeneratorGGredy(RankingGeneratorBase):
+    def __init__(self, train_data, **params):
+        super().__init__(train_data, **params)
+
+    def rank_candidates(self, q, candidates):
+        loci = self.get_loci(q)
+        g_similarity = G(self._train_data[loci].values, q[loci].values)
+        loc_to_sim = dict()
+        for index, loc in enumerate(self._locations):
+            loc_to_sim[tuple(loc)] = np.max(
+                [loc_to_sim.get(tuple(loc), 0),
+                 g_similarity[index]]
+            )
+
+        return [loc_to_sim[tuple(c)] for c in candidates]
+
+    def get_params(self):
+        return dict()
+
+
+class RankingGeneratorGDLinkage(RankingGeneratorBase):
+    def __init__(self, train_data, **params):
+        super().__init__(train_data, **params)
+
+    def get_genotype_distances(self, q):
+        loci = self.get_loci(q)
+        return G_f(self._train_data[loci].values,
+                   q[loci].values,
+                   **self._params)
+
+    def get_location_distances(self, candidates):
+        return np.hstack([
+            D_f(self._locations, candidate, **self._params).reshape(-1, 1)
+            for candidate in candidates
+        ])
+
+    def rank_candidates(self, q, candidates):
+        genotype_d = self.get_genotype_distances(q)
+        location_d = self.get_location_distances(candidates)
+
+        # Thresholds
+        genotype_d = genotype_d * (genotype_d > self._params.get('g_t', 0))
+        location_d = location_d * (location_d > self._params.get('d_t', 0))
+
+        return np.dot(genotype_d, location_d)
+
+    def get_params(self):
+        return {
+            'g_t': (0, 0.3),
+            'd_t': (0, 0.3),
+            'd_alpha': (0.5, 1.5),
+            'g_mean': (0.2, 0.8),
+            'g_std': (1, 10)
+        }

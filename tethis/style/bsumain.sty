@@ -255,30 +255,30 @@
 {\hfil \hyphenpenalty=10000 \normalsize #1 --- \normalsize #2\hfil}%
 \fi \vspace{\belowcaptionskip}}
 
-
-%Оформление подписи таблицы
-%\renewcommand{\thetable}{\@arabic\c@table}
-%чтобы номер таблицы содержал номер главы (например, таблица 2.1) надо закомментировать предыдущую строку
-\renewenvironment{table}{%
-\let\@makecaption\@maketablecaption
-\@float{table}}%
-{%
-\addtocontents{lot}{ {\vskip 0.4em} }%
-\end@float%
-}
 %
-
-\newlength\abovetablecaptionskip
-\newlength\belowtablecaptionskip
-\newlength\tableparindent
-\setlength\abovetablecaptionskip{10\p@}
-\setlength\belowtablecaptionskip{0\p@}
-\setlength\tableparindent{18\p@}
-\newcommand{\@maketablecaption}[2]{
-  \vskip\abovetablecaptionskip
-  \hskip\tableparindent \normalsize #1~---\ \normalsize #2\par
-  \vskip\belowtablecaptionskip
-}
+% %Оформление подписи таблицы
+% %\renewcommand{\thetable}{\@arabic\c@table}
+% %чтобы номер таблицы содержал номер главы (например, таблица 2.1) надо закомментировать предыдущую строку
+% \renewenvironment{table}{%
+% \let\@makecaption\@maketablecaption
+% \@float{table}}%
+% {%
+% \addtocontents{lot}{ {\vskip 0.4em} }%
+% \end@float%
+% }
+% %
+%
+% \newlength\abovetablecaptionskip
+% \newlength\belowtablecaptionskip
+% \newlength\tableparindent
+% \setlength\abovetablecaptionskip{10\p@}
+% \setlength\belowtablecaptionskip{0\p@}
+% \setlength\tableparindent{18\p@}
+% \newcommand{\@maketablecaption}[2]{
+%   \vskip\abovetablecaptionskip
+%   \hskip\tableparindent \normalsize #1~---\ \normalsize #2\par
+%   \vskip\belowtablecaptionskip
+% }
 
 \makeatother%
 
