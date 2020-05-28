@@ -12,6 +12,8 @@ tethis/images/*
 
 !data/str_data
 data/str_data/*
+!data/str_data/ref_str_data.csv
+!data/str_data/ref_str_data_small.csv
 !data/str_data/get*
 !data/str_data/str*
 !data/str_data/STR*
