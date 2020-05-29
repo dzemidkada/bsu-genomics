@@ -19,3 +19,6 @@ plotly
 seaborn
 matplotlib
 python-Levenshtein
+tqdm
+openpyxl
+xlrd

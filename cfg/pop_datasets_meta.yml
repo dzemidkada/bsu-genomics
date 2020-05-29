@@ -3,5 +3,7 @@ datasets:
       path: data/bel_pop_2018_copy.csv
     - name: autosomal_2020
       path: data/autosomal_2019.csv
+    - name: autosomal_2020_v2
+      path: data/autosomal_2019_v2.csv
     - name: us_data_2016
       path: data/1036_dataset.csv

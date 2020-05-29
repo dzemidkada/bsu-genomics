@@ -43,17 +43,17 @@ def get_most_common_reads_from_path(path):
     return get_most_common_reads(reads)
 
 
-def inspect_storage_dir(root_folder):
+def inspect_storage_dir(root_folder, dir_sep='/'):
     '''
     Expected storage structure:
         root_folder / sample / {locus_name}.fq
     '''
     samples_loci_dict = defaultdict(dict)
     loci_samples_dict = defaultdict(dict)
-    for sample_path in glob.glob(f'{root_folder}/*'):
-        sample_id = sample_path.split('/')[-1]
-        for read_path in glob.glob(f'{sample_path}/*'):
-            locus = read_path.split('/')[-1].split('.')[0]
+    for sample_path in glob.glob(f'{root_folder}{dir_sep}*'):
+        sample_id = sample_path.split(dir_sep)[-1]
+        for read_path in glob.glob(f'{sample_path}{dir_sep}*'):
+            locus = read_path.split(dir_sep)[-1].split('.')[0]
             reads = get_most_common_reads_from_path(read_path)
             if reads:
                 samples_loci_dict[sample_id][locus] = read_path
