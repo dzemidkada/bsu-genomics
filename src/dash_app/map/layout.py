@@ -57,11 +57,11 @@ def ethnogeographic_regions_image():
     )
 
 
-def create_data_table(filtered_data, editable=True, table_height=600):
+def create_data_table(filtered_data, editable=True, table_height=600, fixed_headers=True):
     def _data_table_style():
         return {
             'page_action': 'none',
-            'fixed_rows': {'headers': True},
+            'fixed_rows': {'headers': fixed_headers},
             'style_table': {
                 'height': f'{table_height}px',
                 'overflowX': 'auto', 'overflowY': 'auto'

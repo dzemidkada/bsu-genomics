@@ -4,7 +4,6 @@ import json
 
 import dash_core_components as dcc
 import dash_html_components as html
-
 from dash_app.geolocation.utils import sample_to_df
 from dash_app.map.layout import create_data_table
 
@@ -45,35 +44,24 @@ def settings_layout():
     return html.Div(children=[
         html.H5('Settings'),
         html.Div(children=[
-            html.P('Grid size'),
+            html.P('Location method'),
+            dcc.RadioItems(
+                id='method',
+                options=[
+                    {'label': 'Random', 'value': 'random'},
+                    {'label': 'Best Match', 'value': 'best_match'},
+                    {'label': 'Greedy', 'value': 'greedy'},
+                    {'label': 'GDlink', 'value': 'gdlink'}
+                ],
+                value='random'
+            )
+        ]),
+        html.Div(children=[
+            html.P('# Candidates'),
             dcc.Slider(
-                id='grid_size',
-                min=5, max=20, step=1, value=10,
+                id='candidates_k',
+                min=1, max=50, step=1, value=10,
                 marks={5: '5', 10: '10', 20: '20'}
-            ),
-        ]),
-        html.Div(children=[
-            html.P('Distance sensitivity'),
-            dcc.Slider(
-                id='distance_sensitivity',
-                min=0, max=5, step=1e-2, value=1,
-                marks={0: '0', 1: '1', 5: '5'}
-            ),
-        ]),
-        html.Div(children=[
-            html.P('Distance threshold'),
-            dcc.Slider(
-                id='distance_threshold',
-                min=0, max=1, step=5e-2, value=0.5,
-                marks={0: '0', 1: '1'}
-            ),
-        ]),
-        html.Div(children=[
-            html.P('Similarity threshold'),
-            dcc.Slider(
-                id='similarity_threshold',
-                min=0, max=1, step=5e-2, value=0,
-                marks={0: '0', 1: '1'}
             ),
         ]),
     ])
@@ -96,7 +84,9 @@ def genotype_viewer_layout(contents, _):
         html.Div(
             id='genotype-data-table',
             children=[
-                create_data_table(sample_df, editable=False, table_height=70)
+                create_data_table(sample_df,
+                                  editable=False, table_height=100,
+                                  fixed_headers=False)
             ]
         )
     ])

@@ -12,7 +12,6 @@ def collect_q_metrics(d_t, k, q, candidates):
     return pd.DataFrame({
         f'hit@{k}_{d_t}': [np.any(c_distances < d_t)],
         f'hit_count@{k}_{d_t}': [np.sum(c_distances < d_t)],
-        f'min_dist@{k}_{d_t}': [np.min(c_distances)],
         f'median_dist@{k}_{d_t}:': [np.median(c_distances)],
         f'compactness@{k}_{d_t}': [np.mean(ce_distances)]
     })
@@ -35,7 +34,6 @@ def collect_test_metrics(d_t, k, Q, C):
     # Global
     c_freq = candidates_freq(C)
 
-    results['coverage'] = len(c_freq)
-    results['mean_c_repeats'] = np.mean(list(v_ for k_, v_ in c_freq.items()))
+    results[f'coverage@{k}_{d_t}'] = len(c_freq)
 
     return results

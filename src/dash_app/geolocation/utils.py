@@ -1,16 +1,17 @@
 import pandas as pd
-from folium import Map
+
+from dash_app.geolocation.config import MAP_DEFAULT_START_PARAMS
+from folium import Circle, Map
 from folium.plugins import HeatMap
-
-from dash_app.geolocation.config import (MAP_DEFAULT_START_PARAMS,
-                                         MAX_CANDIDATES)
-from geolocation.candidates_ranking import CandidatePointsGenerator
-from geolocation.config import AVAILABLE_LOCI
+from geolocation.geolocation import AVAILABLE_GEOLOCATORS
 
 
-def build_heat_map(data):
+def build_heat_map(data, sample):
     heat_map = Map(**MAP_DEFAULT_START_PARAMS)
     HeatMap(data[['lat', 'long']], radius=10).add_to(heat_map)
+    if 'lat' in sample.columns:
+        heat_map.add_child(Circle(*sample[['lat', 'long']].values,
+                                  radius=1.1e5))
     return heat_map
 
 
@@ -23,14 +24,12 @@ def sample_to_df(sample):
     })
 
 
-def get_candidate_locations(train, sample, hyperparams):
-    loci = [
-        locus
-        for locus in AVAILABLE_LOCI
-        if locus in train.columns and locus in sample.columns
-    ]
-    cpg = CandidatePointsGenerator(train, loci)
-
+def get_candidate_locations(train, sample, params):
+    result_locations = (
+        AVAILABLE_GEOLOCATORS[params['method']](train, {}, {})
+        .batch_locate(sample, params['k'])
+    )
+    print(result_locations)
     return pd.DataFrame(
-        cpg.get_ranked_candidates(sample, hyperparams, MAX_CANDIDATES),
-        columns=['lat', 'long', 'signal'])
+        result_locations[0],
+        columns=['lat', 'long'])

@@ -9,17 +9,21 @@ from geolocation.candidates_ranking import (RankingGeneratorBestMatch,
 
 
 class Geolocator:
-    def __init__(self, train_data):
-        self._train_data = train_data
+    def __init__(self):
+        self._train_data = None
         self._c_gen = None
         self._rank_gen = None
+
+    def set_train_data(self, train_data):
+        self._train_data = train_data
+        return self
 
     def set_candidates_generator(self, generator, **params):
         if generator == 'grid':
             self._c_gen = GridGenerator(**params)
         else:
             self._c_gen = FrequentLocationsGenerator(
-                train_locations=self._train_data, **params)
+                train_data=self._train_data, **params)
         return self
 
     def set_ranking_generator(self, ranker, **params):
@@ -43,3 +47,31 @@ class Geolocator:
 
     def batch_locate(self, Q, k=30):
         return [self.locate(Q.iloc[i:i + 1], k) for i, _ in Q.iterrows()]
+
+
+AVAILABLE_GEOLOCATORS = {
+    'random': lambda train_data, cg_params, rg_params: (
+        Geolocator()
+        .set_train_data(train_data)
+        .set_candidates_generator('freq', **cg_params)
+        .set_ranking_generator('random', **rg_params)
+    ),
+    'best_match': lambda train_data, cg_params, rg_params: (
+        Geolocator()
+        .set_train_data(train_data)
+        .set_candidates_generator('freq', **cg_params)
+        .set_ranking_generator('best_match', **rg_params)
+    ),
+    'greedy': lambda train_data, cg_params, rg_params: (
+        Geolocator()
+        .set_train_data(train_data)
+        .set_candidates_generator('freq', **cg_params)
+        .set_ranking_generator('greedy', **rg_params)
+    ),
+    'gdlink': lambda train_data, cg_params, rg_params: (
+        Geolocator()
+        .set_train_data(train_data)
+        .set_candidates_generator('freq', **cg_params)
+        .set_ranking_generator('gdlink', **rg_params)
+    )
+}

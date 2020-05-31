@@ -11,7 +11,7 @@ class RankingGeneratorBase:
         self.__preprocess_data()
 
     def __preprocess_data(self):
-        self._locations = self._train_data[['lat', 'long']].values
+        self._locations = np.round(self._train_data[['lat', 'long']].values, 3)
 
     def rank_candidates(self, q, candidates):
         raise NotImplementedError()

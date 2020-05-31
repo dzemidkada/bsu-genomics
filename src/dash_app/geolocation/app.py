@@ -1,11 +1,11 @@
 import os
 import traceback
 
+import pandas as pd
+
 import dash
 import dash_html_components as html
-import pandas as pd
 from dash.dependencies import Input, Output
-
 from dash_app.geolocation.config import TRAIN_DATA_TABLE
 from dash_app.geolocation.layout import genotype_viewer_layout, main_layout
 from dash_app.geolocation.utils import build_heat_map, get_candidate_locations
@@ -44,13 +44,10 @@ def upload_genotype(contents, filename):
 
 @app.callback(Output('heat-map-div', 'children'),
               [Input('heat-map-gen-button', 'n_clicks'),
-               Input('grid_size', 'value'),
-               Input('distance_sensitivity', 'value'),
-               Input('distance_threshold', 'value'),
-               Input('similarity_threshold', 'value')])
+               Input('method', 'value'),
+               Input('candidates_k', 'value')])
 def create_heat_map(_,
-                    grid_size, distance_sensitivity,
-                    distance_threshold, similarity_threshold):
+                    method, k):
     global SAMPLE
 
     if SAMPLE is None:
@@ -60,10 +57,10 @@ def create_heat_map(_,
         heat_map = build_heat_map(
             get_candidate_locations(
                 TRAIN_DATA, SAMPLE,
-                dict(grid_size=grid_size,
-                     distance_sensitivity=distance_sensitivity,
-                     distance_threshold=distance_threshold,
-                     similarity_threshold=similarity_threshold)))
+                dict(method=method, k=k)
+            ),
+            SAMPLE
+        )
     except:
         traceback.print_exc()
 
